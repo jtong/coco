@@ -1,3 +1,5 @@
-pub mod git_analysis;
-pub mod cloc_analysis;
-pub mod format_branch;
+pub use coco_opt::CocoOpt;
+
+pub mod analysis;
+pub mod coco_opt;
+pub mod visual;

@@ -1,7 +1,7 @@
 [package]
 name = "coco"
-version = "0.1.0"
-authors = ["Phodal Huang <h@phodal.com>"]
+version = "0.4.2"
+authors = ["Inherd Group <group@inherd.org>", "Phodal Huang <h@phodal.com>"]
 edition = "2018"
 license = "MIT"
 readme = "README.md"
@@ -9,7 +9,7 @@ repository = "https://github.com/phodal/coco"
 documentation = "https://github.com/phodal/coco"
 homepage = "https://github.com/phodal/coco"
 description = """
-Coco 是一个研发效能分析工具，如开发速率（根据架构复杂度及行数变更）、团队演进、历史分析、根因分析等。生成可视化报告，并对应的改进建议。 a effective DevOps analysis and auto-suggest tools.
+Coco 是一个研发效能分析工具，如开发速率（根据架构复杂度及行数变更）、团队演进、历史分析、根因分析等。生成可视化报告，并对应的改进建议。 A DevOps efficiency analysis and auto-suggestion tool.
 """
 categories = ["text-processing", "command-line-interface", "development-tools"]
 exclude = [
@@ -23,18 +23,17 @@ exclude = [
 ]
 
 [dependencies]
+failure = "0.1.8"
+
 lazy_static = "1.4.0"
 
 # time format
 chrono = "0.4"
 
 git2 = "0.13"
-
+git-scanner = "0.2.0"
 # for cli usage
 clap = "2.33.3"
-
-# for git clone
-tempdir = "0.3"
 
 # parse for url
 url = "2.2.0"
@@ -42,14 +41,66 @@ url = "2.2.0"
 # cloc
 tokei = "12.1.2"
 
-plotters = "^0.3.0" # char
-
 # serializing and deserializing
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.8" # for config parse
 
+# Parallel
+rayon = "1.5"
+
+walkdir = "2"
+
+regex = "1"
+
+# grammar generator
+pest = "2.1.3"
+pest_derive = "2.1.0"
+
+# embed file
+rust-embed="5.9.0"
+
+# visual for web
+actix-web = { version = "3", default-features = false }
+actix-rt = "2.0.0"
+mime_guess = { version = "2" }
+
+# cli prompt
+dialoguer = "0.7.1"
+
+# open URLs in browsers
+webbrowser = "0.5.5"
+
+# handle for shell path like ~
+shellexpand = "2.1.0"
+
+# download plugins
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+zip = "0.5"
+
+content_inspector = "0.2.4"
+
+structopt = "0.3"
+[dependencies.framework]
+path = "framework"
+
+[dependencies.core_model]
+path = "core_model"
+
+[dependencies.plugin_manager]
+path = "plugin_manager"
+
 [workspace]
 members = [
-  'framework'
+  'framework',
+  'e2e',
+  'core_model',
+  'plugin_manager',
+  'plugins/coco_swagger',
+  'plugins/coco_struct',
+  'plugins/coco_coverage',
+  'plugins/coco_pipeline',
+  'plugins/coco_container',
+  'psa',
 ]
+

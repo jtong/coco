@@ -1,13 +1,4 @@
-pub struct ClocLanguage {
-    pub blanks: usize,
-    pub code: usize,
-    pub comments: usize,
-    pub reports: Vec<ClocDetail>,
-}
+pub use cloc_language::ClocDetail;
+pub use cloc_language::ClocLanguage;
 
-pub struct ClocDetail {
-    pub blanks: usize,
-    pub code: usize,
-    pub comments: usize,
-    pub name: String,
-}
+pub mod cloc_language;

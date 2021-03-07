@@ -1,27 +1,50 @@
 name: Coco Build
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest]
-#        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - name: Checkout submodules
         shell: bash
         run: |
+          git fetch --tags
           auth_header="$(git config --local --get http.https://github.com/.extraheader)"
           git submodule sync --recursive
           git -c "http.extraheader=$auth_header" -c protocol.version=2 submodule update --init --force --recursive --depth=1
-      - name: Get rust nightly
-        run: rustup install nightly
-      - name: Set rust nightly as default for cargo
-        run: rustup default nightly
+
+      - name: Install Just
+        run: cargo install just
+
       - name: Build
-        run: ${{matrix.ENV_VARS}} cargo build --verbose --release
-      - name: Run tests
-        run: ${{matrix.ENV_VARS}} cargo test --verbose --all
+        run: ${{matrix.ENV_VARS}} just release
+
+      - name: Build Debug for Testing
+        run: ${{matrix.ENV_VARS}} cargo build --all
+
+      - name: Install ctags on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo snap install universal-ctags
+
+      - name: Install ctags on macOS
+        if: matrix.os == 'macOS-latest'
+        run: |
+          brew update
+          brew install --HEAD universal-ctags/universal-ctags/universal-ctags
+
+      - name: Install ctags on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          choco install universal-ctags
+
+      - name: Run unit tests
+        run: ${{matrix.ENV_VARS}} just tests
+
+      - name: Run e2e
+        run: ${{matrix.ENV_VARS}} just e2e

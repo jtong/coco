@@ -1,7 +1,30 @@
-repo:
+repos:
   - url: https://github.com/coco-rs/coco.fixtures
+    languages: [Java]
   - url: https://github.com/coco-rs/coco.fixtures2
+  - url: .
+    languages: [Rust]
+  - url: https://github.com/datum-lang/scie
+  - url: https://github.com/projectfluent/fluent-rs
+    languages: [Rust, JavaScript]
 
-message:
-  #  should be a regexp
-  format: []
+plugins:
+  - name: swagger
+  - name: struct
+    config:
+      - key: ctags
+        value: /usr/local/bin/ctags
+
+# todo: add commit
+commit:
+  # default: conventional commit: (?<type>build)(?<scope>(?:\([^()\r\n]*\)|\()?(?<breaking>!)?)(?<subject>:.*)?
+  # link url: https://regex101.com/r/V5J8kh/1
+  #
+  # jira: ^(feature|fix)\/(([a-z,A-Z]+))(-)(\d*)(:)([a-z,0–9])
+  # jira test case: feature/JIR-124:test commit message
+  regex: ^(feature|fix)\/(([a-z,A-Z]+))(-)(\d*)(:)([a-z,0–9])
+  matches:
+    - branch
+    - tag
+    - id
+  samples: feature/JIR-124:test commit message

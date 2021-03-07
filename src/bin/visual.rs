@@ -1,30 +1,106 @@
-use plotters::prelude::*;
+use clap::{App, Arg, ArgMatches};
+use dialoguer::{theme::ColorfulTheme, Select};
+use webbrowser;
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let root = SVGBackend::new("output.svg", (640, 480)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .caption("y=x^2", ("sans-serif", 50).into_font())
-        .margin(5)
-        .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(-1f32..1f32, -0.1f32..1f32)?;
+use coco::app::visual::{local_server, output_static};
+use coco::infrastructure::file_scanner;
+use core_model::CocoConfig;
 
-    chart.configure_mesh().draw()?;
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-    chart
-        .draw_series(LineSeries::new(
-            (-50..=50).map(|x| x as f32 / 50.0).map(|x| (x, x * x)),
-            &RED,
-        ))?
-        .label("y = x^2")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let matches = App::new("Coco Visual")
+        .version(VERSION)
+        .author("Inherd Group")
+        .about("A DevOps Efficiency Analysis and Auto-suggestion Tool.")
+        .arg(
+            Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .value_name("project name")
+                .help("project name")
+                .takes_value(true),
+        )
+        .subcommand(
+            App::new("export")
+                .about("export")
+                .version(VERSION)
+                .author("Inherd Group")
+                .arg(
+                    Arg::with_name("path")
+                        .short("p")
+                        .help("output path")
+                        .takes_value(true),
+                ),
+        )
+        .arg(
+            Arg::with_name("port")
+                .short("p")
+                .long("port")
+                .help("http server port")
+                .takes_value(true),
+        )
+        .get_matches();
 
-    chart
-        .configure_series_labels()
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
-        .draw()?;
+    let project = match matches.value_of("name") {
+        Some(proj) => proj.to_string(),
+        None => select_project_prompt(),
+    };
 
-    Ok(())
+    if let Some(ref matches) = matches.subcommand_matches("export") {
+        start_export_reporter(matches, project);
+        return Ok(());
+    }
+
+    // todo: add load config
+    let _config = CocoConfig::default();
+    let port = match matches.value_of("port") {
+        Some(input) => input,
+        None => "8000",
+    };
+
+    return start_local_server(project, port).await;
+}
+
+fn start_export_reporter(matches: &&ArgMatches, project_name: String) {
+    let mut path = "coco_static";
+    if let Some(input) = matches.value_of("path") {
+        path = input
+    }
+
+    output_static::run(path, project_name);
+}
+
+async fn start_local_server(project: String, port: &str) -> std::io::Result<()> {
+    let url = format!("http://127.0.0.1:{}", port);
+    println!("start server: {}", url);
+
+    open_url(&url);
+
+    println!("project: {}", project);
+    return local_server::start(port, project).await;
+}
+
+pub fn open_url(url: &str) {
+    if let Err(err) = webbrowser::open(url) {
+        println!("failure to open in browser: {}", err);
+    }
+}
+
+pub fn select_project_prompt() -> String {
+    let selections = file_scanner::lookup_projects();
+    if selections.len() == 0 {
+        panic!("Please run coco first!");
+    }
+
+    let selection = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("pick project")
+        .default(0)
+        .items(&selections[..])
+        .interact()
+        .expect("1. Windows Users need to run with Windows Shell, such as PowerShell");
+
+    let project = selections[selection].clone();
+    project
 }

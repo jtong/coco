@@ -1,27 +1,18 @@
-use std::path::{Path, PathBuf};
-
 use git2::Repository;
-use url::Url;
 
-use crate::settings::Settings;
+use core_model::url_format;
+use std::fs;
 
 pub struct GitRepository {}
 
 impl GitRepository {
-    pub fn clone(url: &str) -> Repository {
-        let uri_path = match Url::parse(url) {
-            Ok(url) => url,
-            Err(e) => panic!("failed to parsed: {}", e),
-        };
+    pub fn open(url: &str) -> Repository {
+        let local_path = url_format::uri_to_path(url);
 
-        let buf = GitRepository::uri_to_path(uri_path);
-
-        let path_str = buf.as_path().to_str().unwrap();
-        println!("target dir: {:?}", path_str);
-        if buf.exists() {
+        println!("target dir: {:?}", local_path.display());
+        if local_path.exists() {
             // todo: make update for repo
-            println!("todo: make update for repo");
-            let repo = match Repository::open(Path::new(path_str)) {
+            let repo = match Repository::open(local_path) {
                 Ok(repo) => repo,
                 Err(e) => panic!("failed to open: {}", e),
             };
@@ -29,28 +20,22 @@ impl GitRepository {
             return repo;
         };
 
-        // for windows https://github.com/rust-lang/git2-rs/issues/475
-        let repo = match Repository::clone(url, Path::new(path_str)) {
+        let _ = fs::create_dir_all(&local_path.parent().unwrap());
+        let repo = match Repository::clone(url, &local_path) {
             Ok(repo) => repo,
-            Err(e) => panic!("failed to clone: {}", e),
+            Err(e) => {
+                let exist_string = "exists and is not an empty directory";
+
+                if e.to_string().contains(exist_string) {
+                    return match Repository::open(local_path) {
+                        Ok(repo) => repo,
+                        Err(e) => panic!("failed to open: {}", e),
+                    };
+                }
+                panic!("failed to clone: {}", e)
+            }
         };
 
         return repo;
-    }
-
-    pub fn uri_to_path(uri_path: Url) -> PathBuf {
-        let root = Path::new(Settings::dir());
-        let mut buf = root.join(PathBuf::from(uri_path.host().unwrap().to_string()));
-
-        let paths = uri_path
-            .path_segments()
-            .map(|c| c.collect::<Vec<_>>())
-            .unwrap();
-
-        for path in paths {
-            buf = buf.join(PathBuf::from(path));
-        }
-
-        buf
     }
 }
